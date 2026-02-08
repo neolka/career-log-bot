@@ -1,4 +1,5 @@
 __pycache__/
 *.pyc
 .env
-config.py
+.venv/
+data/achievements.json
