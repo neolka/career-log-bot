@@ -1,5 +1,5 @@
 __pycache__/
-*.pyc
 .env
 .venv/
 data/achievements.json
+data/users.json
