@@ -19,6 +19,7 @@ def load_achievements() -> list[dict]:
     except (FileNotFoundError, json.JSONDecodeError):
         logger.warning("Achievements file not found or invalid")
         return []
+    
 
 def save_achievement(answers: list[str]) -> None:
     achievement = {
@@ -36,6 +37,7 @@ def save_achievement(answers: list[str]) -> None:
 
     logger.info("Achievement successfully saved")
 
+
 def _load_users() -> dict:
     if not USERS_FILE.exists():
         return {}
@@ -46,6 +48,7 @@ def _load_users() -> dict:
     except json.JSONDecodeError:
         logger.warning("Invalid users.json")
         return {}
+    
 
 def _save_users(data: dict) -> None:
     with open(USERS_FILE, "w", encoding="utf-8") as f:
@@ -55,6 +58,7 @@ def _save_users(data: dict) -> None:
 def get_user_language(user_id: int) -> str:
     users = _load_users()
     return users.get(str(user_id), {}).get("language", "en")
+
 
 def set_user_language(user_id: int, lang: str) -> None:
     users = _load_users()
