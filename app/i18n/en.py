@@ -27,6 +27,5 @@ TEXTS = {
 
     "no_active_flow": "Choose an action from the menu ⬇️",
     "done": "Done ✅ Your achievement is saved.",
-    "empty_list": "No achievements yet 🙂",
 }
 

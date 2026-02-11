@@ -10,14 +10,9 @@ from app.storage import (
 
 logger = logging.getLogger(__name__)
 
-# single-user in-memory state
-STATE = {
-    "step": None,
-    "answers": [],
-}
-
 async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = get_lang()
+    user_id = update.effective_user.id
+    lang = get_lang(user_id)
 
     await update.message.reply_text(
         t("choose_language", lang),
@@ -28,8 +23,9 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
+    user_id = update.effective_user.id
     lang = query.data.replace("lang_", "").lower()
-    set_lang(lang)
+    set_lang(user_id, lang)
 
     await query.edit_message_text(
         t("language_changed", lang)
@@ -43,10 +39,12 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"User started bot")
-    lang = get_lang()
+    user_id = update.effective_user.id
+    lang = get_lang(user_id)
 
-    STATE["step"] = None
-    STATE["answers"] = []
+    # Очищуємо дані користувача при старті
+    context.user_data["step"] = None
+    context.user_data["answers"] = []
 
     await update.message.reply_text(
         t("start_message", lang),
@@ -55,10 +53,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def new_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"User started new entry")
-    lang = get_lang()
+    user_id = update.effective_user.id
+    lang = get_lang(user_id)
 
-    STATE["step"] = 0
-    STATE["answers"] = []
+    # Встановлюємо стан ТІЛЬКИ для цього користувача
+    context.user_data["step"] = 0
+    context.user_data["answers"] = []
 
     await update.message.reply_text(
         t("question_1", lang),
@@ -67,8 +67,8 @@ async def new_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def list_achievements(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"User requested achievements list")
-
-    lang = get_lang()
+    user_id = update.effective_user.id
+    lang = get_lang(user_id)
     achievements = load_achievements()
 
     if not achievements:
@@ -90,10 +90,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
 
+    user_id = update.effective_user.id
     text = update.message.text
-    lang = get_lang()
+    lang = get_lang(user_id)
 
-    # кнопки
+    # Ініціалізація стану, якщо порожньо
+    if "step" not in context.user_data:
+        context.user_data["step"] = None
+    if "answers" not in context.user_data:
+        context.user_data["answers"] = []
+
+    # кнопки меню
     if text == t("btn_new", lang):
         await new_entry(update, context)
         return
@@ -105,33 +112,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == t("btn_language", lang):
         await language(update, context)
         return
-
-    # немає активного сценарію
-    if STATE["step"] is None:
+    
+    # Якщо запис не розпочато
+    if context.user_data["step"] is None:
         await update.message.reply_text(
             t("choose_action", lang),
             reply_markup=main_keyboard(lang),
         )
         return
 
+    # Зберігаємо відповідь у список користувача
+    context.user_data["answers"].append(text)
+    
+    current_step = context.user_data["step"]
+    logger.info(f"User answered step {current_step}")
 
-    STATE["answers"].append(text)
+    context.user_data["step"] += 1
+    next_step_num = context.user_data["step"] + 1
 
-    logger.info(
-        f"User answered step {STATE['step']}: {text}"
-    )
-
-    STATE["step"] += 1
-
-    next_step = STATE["step"] + 1
-    key = f"question_{next_step}"
-
-    if next_step <= 3:
+    if next_step_num <= 3:
+        key = f"question_{next_step_num}"
         await update.message.reply_text(t(key, lang))
     else:
-        save_achievement(STATE["answers"])
-        STATE["step"] = None
-        STATE["answers"] = []
+        # Зберігаємо результат
+        save_achievement(context.user_data["answers"])
+        
+        # Скидаємо стан саме для цього користувача
+        context.user_data["step"] = None
+        context.user_data["answers"] = []
 
         await update.message.reply_text(
             t("saved", lang),

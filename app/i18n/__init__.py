@@ -1,5 +1,9 @@
 from app.i18n.ua import TEXTS as UA_TEXTS
 from app.i18n.en import TEXTS as EN_TEXTS
+from app.storage import get_user_language, set_user_language
+import logging
+
+logger = logging.getLogger(__name__)
 
 LANGUAGES = {
     "ua": UA_TEXTS,
@@ -7,28 +11,26 @@ LANGUAGES = {
 }
 
 DEFAULT_LANG = "en"
-CURRENT_LANG = DEFAULT_LANG
 
-def get_lang() -> str:
-    return CURRENT_LANG
+def get_lang(user_id: int) -> str:
+    return get_user_language(user_id)
 
 
-def set_lang(lang: str) -> None:
-    global CURRENT_LANG
+def set_lang(user_id: int, lang: str) -> None:
     if lang in LANGUAGES:
-        CURRENT_LANG = lang
+        set_user_language(user_id, lang)
         
 
-def t(key: str, lang: str ) -> str:
+def t(key: str, lang: str) -> str:
     texts = LANGUAGES.get(lang, LANGUAGES["en"])
     value = texts.get(key)
 
     if value is None:
-        raise KeyError(f"Missing i18n key: '{key}' for lang='{lang}'")
+        logger.error(f"Missing i18n key: '{key}' for lang='{lang}'")
+        return key
     
     if not isinstance(value, str):
-        raise TypeError(
-            f"i18n key '{key}' must be str, got {type(value)}"
-        )
+        logger.warning(f"i18n key '{key}' is not a string, converting...")
+        return str(value)
     
     return value
