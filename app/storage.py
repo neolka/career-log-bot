@@ -49,7 +49,6 @@ def _load_users() -> dict:
                 return {}
             data = json.loads(content)
             
-            # ВАЖЛИВА ПЕРЕВІРКА:
             if not isinstance(data, dict):
                 logger.warning(f"Expected dict in users.json, got {type(data)}. Resetting to empty dict.")
                 return {}
@@ -84,14 +83,13 @@ def get_user_language(user_id: int) -> str:
 def set_user_language(user_id: int, lang: str) -> None:
     users = _load_users()
     
-    # 2. Оновлюємо або створюємо запис для конкретного юзера
+    # Оновлюємо або створюємо запис для конкретного юзера
     user_key = str(user_id)
     if user_key not in users:
         users[user_key] = {}
     
     users[user_key]["language"] = lang
     
-    # 3. Зберігаємо оновлений словник назад у файл
     try:
         _save_users(users)
         logger.info(f"Language for user {user_id} set to {lang}")

@@ -3,3 +3,5 @@ __pycache__/
 .venv/
 data/achievements.json
 data/users.json
+data/career_log.db
+scripts/

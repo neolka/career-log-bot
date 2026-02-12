@@ -7,6 +7,8 @@ from app.storage import (
     save_achievement,
     load_achievements,
 )
+from app.database import Database
+db = Database()
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         t("language_changed", lang)
     )
 
-    # показуємо меню вже НОВОЮ мовою
+    # Показуємо меню вже НОВОЮ мовою
     await query.message.reply_text(
         t("choose_action", lang),
         reply_markup=main_keyboard(lang),
@@ -69,7 +71,7 @@ async def list_achievements(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"User requested achievements list")
     user_id = update.effective_user.id
     lang = get_lang(user_id)
-    achievements = load_achievements()
+    achievements = db.get_achievements(user_id)
 
     if not achievements:
         await update.message.reply_text(t("no_achievements", lang))
@@ -135,7 +137,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(t(key, lang))
     else:
         # Зберігаємо результат
-        save_achievement(context.user_data["answers"])
+        db.add_achievement(user_id, context.user_data["answers"])
         
         # Скидаємо стан саме для цього користувача
         context.user_data["step"] = None
